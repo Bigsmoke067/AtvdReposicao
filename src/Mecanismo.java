@@ -3,92 +3,135 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 public class Mecanismo {
+    private String chaveCifra;
+    private BufferedReader reader;
+    private ArrayList<String> arq;
+
+    public Mecanismo(String chave) {
+        this.chaveCifra = chave;
+
+    }
 
     public void executarCripto(String arquivoTexto, String arquivoCripto) {
-        ArrayList<Character> bufferPrimario = new ArrayList<>();
-        BufferedReader leitor = null;
+        LerArquivo(arquivoTexto);
+        criptografarArquivo(arquivoTexto, arquivoCripto);
 
-        try {
-            // Leitura do arquivo de entrada
-            leitor = new BufferedReader(new FileReader(arquivoTexto));
-            String linha;
-            while ((linha = leitor.readLine()) != null) {
-                for (char c : linha.toCharArray()) {
-                    bufferPrimario.add(c);
-                }
-                bufferPrimario.add('\n');
-            }
-            leitor.close();
-
-            // Entrada da chave
-            System.out.print("Digite a chave da Cifra de César: ");
-            BufferedReader teclado = new BufferedReader(new InputStreamReader(System.in));
-            int chave = Integer.parseInt(teclado.readLine());
-
-            // Criptografia
-            StringBuilder texto = new StringBuilder();
-            for (Character c : bufferPrimario) {
-                texto.append(c);
-            }
-
-            CifraCesar cifra = new CifraCesar(chave);
-            String textoCriptografado = cifra.criptografar(texto.toString());
-
-            // Escrita no arquivo de saída
-            BufferedWriter escritor = new BufferedWriter(new FileWriter(arquivoCripto));
-            escritor.write(textoCriptografado);
-            escritor.close();
-
-            System.out.println("Criptografia concluída!");
-
-        } catch (IOException e) {
-            System.out.println("Erro ao criptografar: " + e.getMessage());
-        }
     }
 
     public void executarDecripto(String entradaCripto, String saidaDecripto) {
-        ArrayList<Character> bufferPrimario = new ArrayList<>();
-        BufferedReader leitor = null;
+        LerArquivo(entradaCripto);
+        descriptografarArquivo(entradaCripto, saidaDecripto);
 
+    }
+
+    public void LerArquivo(String caminhoArquivo) {
+        System.out.println("----------------------------------------");
+        System.out.println("##### Carregar Arquivo De Entrada #####");
+        this.CarregarBufferPrimario(caminhoArquivo);
+    }
+
+    private void CarregarBufferPrimario(String caminhoArquivo) {
         try {
-            // Leitura do arquivo criptografado
-            leitor = new BufferedReader(new FileReader(entradaCripto));
-            String linha;
-            while ((linha = leitor.readLine()) != null) {
-                for (char c : linha.toCharArray()) {
-                    bufferPrimario.add(c);
-                }
-                bufferPrimario.add('\n');
-            }
-            leitor.close();
-
-            // Entrada da chave
-            System.out.print("Digite a mesma chave usada: ");
-            BufferedReader teclado = new BufferedReader(new InputStreamReader(System.in));
-            int chave = Integer.parseInt(teclado.readLine());
-
-            // Descriptografia
-            StringBuilder texto = new StringBuilder();
-            for (Character c : bufferPrimario) {
-                texto.append(c);
-            }
-
-            CifraCesar cifra = new CifraCesar(chave);
-            String textoDescriptografado = cifra.descriptografar(texto.toString());
-
-            // Escrita no arquivo de saída
-            BufferedWriter escritor = new BufferedWriter(new FileWriter(saidaDecripto));
-            escritor.write(textoDescriptografado);
-            escritor.close();
-
-            System.out.println("Descriptografia concluída!");
-
+            this.reader = new BufferedReader(new FileReader(caminhoArquivo));
         } catch (IOException e) {
-            System.out.println("Erro ao descriptografar: " + e.getMessage());
+            System.out.println("Erro ao ler o arquivo: " + e.getMessage());
+        }
+        ProcessarBufferPrimario();
+    }
+
+    public void ProcessarBufferPrimario() {
+        this.arq = new ArrayList<>();
+        try {
+            String linha;
+            while ((linha = this.reader.readLine()) != null) {
+                arq.add(linha);
+            }
+        } catch (IOException e) {
+            System.out.println("Erro ao ler o arquivo: " + e.getMessage());
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    System.out.println("Erro ao fechar o arquivo: " + e.getMessage());
+                }
+            }
+        }
+        ImprimirArquivo();
+    }
+
+    public void ImprimirArquivo() {
+        System.out.println("----------------------------------------");
+        System.out.println("##### Conteúdo do Arquivo: #####");
+        for (String texto : this.arq) {
+            System.out.println(texto);
+        }
+        System.out.println("----------------------------------------");
+    }
+
+    public void EscreverArquivo(String caminhoArquivo, ArrayList<String> conteudo) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(caminhoArquivo))) {
+            for (String linha : conteudo) {
+                writer.write(linha);
+                writer.newLine();
+            }
+            System.out.println("Arquivo salvo com sucesso: " + caminhoArquivo);
+        } catch (IOException e) {
+            System.out.println("Erro ao escrever no arquivo: " + e.getMessage());
         }
     }
+
+    public void criptografarArquivo(String arquivoEntrada, String arquivoSaida) {
+
+        VigenereCipher cifra = new VigenereCipher();
+
+        try (BufferedReader leitor = new BufferedReader(new FileReader(arquivoEntrada))) {
+            StringBuilder texto = new StringBuilder();
+            int caractere;
+
+            while ((caractere = leitor.read()) != -1) {
+                texto.append((char) caractere);
+            }
+
+            String textoCriptografado = cifra.criptografar(texto.toString(), chaveCifra);
+
+            try (BufferedWriter escritor = new BufferedWriter(new FileWriter(arquivoSaida))) {
+                escritor.write(textoCriptografado);
+            }
+
+            System.out.println("Arquivo criptografado com sucesso: " + arquivoSaida);
+
+        } catch (IOException e) {
+            System.out.println("Erro ao processar o arquivo: " + e.getMessage());
+        }
+    }
+
+    public void descriptografarArquivo(String arquivoEntrada, String arquivoSaida) {
+
+        VigenereCipher cifra = new VigenereCipher();
+
+        try (BufferedReader leitor = new BufferedReader(new FileReader(arquivoEntrada))) {
+            StringBuilder texto = new StringBuilder();
+            int caractere;
+
+            while ((caractere = leitor.read()) != -1) {
+                texto.append((char) caractere);
+            }
+
+            String textoCriptografado = cifra.descriptografar(texto.toString(), chaveCifra);
+
+            try (BufferedWriter escritor = new BufferedWriter(new FileWriter(arquivoSaida))) {
+                escritor.write(textoCriptografado);
+            }
+
+            System.out.println("Arquivo descriptografado com sucesso: " + arquivoSaida);
+
+        } catch (IOException e) {
+            System.out.println("Erro ao processar o arquivo: " + e.getMessage());
+        }
+    }
+
 }
